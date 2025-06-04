@@ -1,34 +1,33 @@
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        success: "border-transparent bg-green-500 text-white hover:bg-green-600",
-        warning: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
+// Define variant styles as a simple object
+const badgeStyles = {
+  default: "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+  secondary: "border-transparent bg-gray-500 text-white hover:bg-gray-600",
+  destructive: "border-transparent bg-red-500 text-white hover:bg-red-600",
+  outline: "text-gray-700 border-gray-300 bg-transparent hover:bg-gray-50",
+  success: "border-transparent bg-green-500 text-white hover:bg-green-600",
+  warning: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+}
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+export type BadgeVariant = keyof typeof badgeStyles
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: BadgeVariant
+}
+
+function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div 
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+        badgeStyles[variant],
+        className
+      )} 
+      {...props} 
+    />
   )
 }
 
-export { Badge, badgeVariants }
+export { Badge }
