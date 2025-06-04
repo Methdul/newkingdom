@@ -10,21 +10,10 @@ export const metadata: Metadata = {
   description: 'Modern gym management system for fitness professionals',
   keywords: ['gym', 'fitness', 'management', 'membership', 'health'],
   authors: [{ name: 'FitZone Team' }],
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: 'white' },
     { media: '(prefers-color-scheme: dark)', color: 'black' },
   ],
-  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({

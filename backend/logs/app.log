@@ -1,1 +1,6 @@
 [2025-06-04T14:26:06.449Z] ERROR: Failed to initialize email transporter:
+[2025-06-04T14:50:39.777Z] ERROR: Failed to initialize email transporter:
+[2025-06-04T15:13:54.569Z] ERROR: Failed to initialize email transporter:
+[2025-06-04T15:14:06.007Z] ERROR: Failed to initialize email transporter:
+[2025-06-04T15:14:21.239Z] ERROR: Failed to initialize email transporter:
+[2025-06-04T15:23:37.427Z] INFO: AUTH: login {"userId":"2fc23df4-5018-4c1f-86b6-f8c956cb5539","success":true,"action":"login","role":"admin","gymLocationId":"7f582eb3-6e74-48bd-9edd-94c9997b79c0","ip":"127.0.0.1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}

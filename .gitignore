@@ -1,0 +1,74 @@
+# Dependencies (both frontend and backend)
+frontend/node_modules/
+backend/node_modules/
+node_modules/
+
+# Environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+.env
+
+# Next.js specific (frontend)
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/build/
+frontend/*.tsbuildinfo
+
+# Backend specific
+backend/logs/
+backend/uploads/
+backend/temp/
+backend/dist/
+backend/build/
+backend/coverage/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package lock files (optional - remove these lines if you want to include them)
+frontend/package-lock.json
+backend/package-lock.json
+
+# Cache directories
+.cache/
+.parcel-cache/
+.npm
+.eslintcache
+
+# Database files (if using local DB)
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary folders
+tmp/
+temp/
