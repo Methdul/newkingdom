@@ -17,7 +17,6 @@ import {
 import { useAnalytics } from '@/hooks/useApi';
 import { LoadingCard } from '@/components/ui/loading';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 // Define the change type more strictly
@@ -192,7 +191,7 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions - FIXED: No nested links */}
+      {/* Quick Actions - FIXED: Removed nested links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"

@@ -33,7 +33,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          await api.logout();
+          // Don't wait for API call to complete to avoid hanging
+          api.logout().catch(() => {}); // Fire and forget
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
@@ -52,6 +53,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refreshToken: async () => {
+        // Only refresh if we have a user and are authenticated
+        const currentState = get();
+        if (!currentState.user || !currentState.isAuthenticated) {
+          return;
+        }
+
         try {
           const response = await api.getProfile();
           set({
@@ -59,8 +66,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
           });
         } catch (error) {
-          console.error('Token refresh failed:', error);
-          get().logout();
+          console.error('Profile refresh failed:', error);
+          // Don't logout on profile refresh failure - token might still be valid
         }
       },
 

@@ -7,6 +7,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { LoadingPage } from '@/components/ui/loading';
 import { Toaster } from 'react-hot-toast';
+import { DebugAuth } from '@/components/debug/DebugAuth';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -53,7 +54,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             border: '1px solid hsl(var(--border))',
           },
         }}
+        
       />
+      {process.env.NODE_ENV === 'development' && <DebugAuth />}
     </div>
   );
 }

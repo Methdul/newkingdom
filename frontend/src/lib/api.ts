@@ -5,7 +5,6 @@
 
 import axios, { 
   AxiosInstance, 
-  AxiosRequestConfig, 
   AxiosResponse, 
   InternalAxiosRequestConfig 
 } from 'axios';
@@ -61,7 +60,6 @@ const apiClient: AxiosInstance = axios.create({
 // ===== Request Interceptor =====
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add auth token to requests
     const token = Cookies.get(TOKEN_KEY);
     if (token) {
       if (!config.headers) {
@@ -70,7 +68,6 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Add request timestamp for debugging
     if (process.env.NODE_ENV === 'development') {
       config.metadata = { 
         startTime: Date.now(),
@@ -89,24 +86,28 @@ apiClient.interceptors.request.use(
 // ===== Response Interceptor =====
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log response time in development
     if (process.env.NODE_ENV === 'development' && response.config.metadata) {
       const duration = Date.now() - response.config.metadata.startTime;
       console.log(`API ${response.config.metadata.method} ${response.config.metadata.url} - ${duration}ms`);
     }
-
     return response;
   },
-  async (error) => {
+  async (error: any) => {
     const originalRequest = error.config;
 
-    // Handle token expiration
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      if (originalRequest.url?.includes('/auth/login') || 
+          originalRequest.url?.includes('/auth/register') ||
+          originalRequest.url?.includes('/auth/refresh-token')) {
+        return Promise.reject(error);
+      }
 
       try {
         const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
         if (refreshToken) {
+          console.log('Attempting token refresh...');
           const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
             refreshToken,
           });
@@ -114,19 +115,20 @@ apiClient.interceptors.response.use(
           const { accessToken } = response.data.data.session;
           Cookies.set(TOKEN_KEY, accessToken);
 
-          // Retry original request
           if (!originalRequest.headers) {
             originalRequest.headers = {} as any;
           }
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          console.log('Token refreshed successfully, retrying request');
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed, redirect to login
+        console.error('Token refresh failed:', refreshError);
         Cookies.remove(TOKEN_KEY);
         Cookies.remove(REFRESH_TOKEN_KEY);
         
         if (typeof window !== 'undefined') {
+          console.log('Redirecting to login due to token refresh failure');
           window.location.href = '/auth/login';
         }
         
@@ -134,7 +136,6 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Handle other errors with user-friendly messages
     let errorMessage = 'An unexpected error occurred';
     
     if (error.response?.data?.message) {
@@ -149,8 +150,8 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Only show toast for non-401 errors (401 is handled above)
     if (error.response?.status !== 401) {
+      console.error('API Error:', errorMessage);
       toast.error(errorMessage);
     }
 
@@ -181,12 +182,10 @@ const buildQueryString = (params: Record<string, any>): string => {
 
 // ===== API Client Class =====
 class FitZoneAPI {
-  // ===== Authentication =====
   async login(credentials: LoginForm): Promise<AuthResponse> {
     const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
     const data = handleApiResponse(response);
     
-    // Store tokens with proper expiration
     if (data.session.accessToken) {
       Cookies.set(TOKEN_KEY, data.session.accessToken, {
         expires: new Date(data.session.expiresAt * 1000),
@@ -197,7 +196,7 @@ class FitZoneAPI {
     
     if (data.session.refreshToken) {
       Cookies.set(REFRESH_TOKEN_KEY, data.session.refreshToken, {
-        expires: 7, // 7 days
+        expires: 7,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
       });
@@ -215,7 +214,6 @@ class FitZoneAPI {
     try {
       await apiClient.post('/auth/logout');
     } catch (error) {
-      // Ignore logout errors - always clear local tokens
       console.warn('Logout API call failed:', error);
     } finally {
       Cookies.remove(TOKEN_KEY);
@@ -248,7 +246,6 @@ class FitZoneAPI {
     handleApiResponse(response);
   }
 
-  // ===== Members =====
   async getMembers(params: MemberQueryParams = {}): Promise<PaginatedResponse<Member[]>> {
     const queryString = buildQueryString(params);
     const url = queryString ? `/members?${queryString}` : '/members';
@@ -286,7 +283,6 @@ class FitZoneAPI {
     handleApiResponse(response);
   }
 
-  // ===== Staff =====
   async getStaff(params: QueryParams = {}): Promise<PaginatedResponse<TeamMember[]>> {
     const queryString = buildQueryString(params);
     const url = queryString ? `/staff?${queryString}` : '/staff';
@@ -299,7 +295,6 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
-  // ===== Payments =====
   async getPayments(params: PaymentQueryParams = {}): Promise<PaginatedResponse<Payment[]>> {
     const queryString = buildQueryString(params);
     const url = queryString ? `/payments?${queryString}` : '/payments';
@@ -317,7 +312,6 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
-  // ===== Membership Plans =====
   async getMembershipPlans(): Promise<{ plans: MembershipPlan[] }> {
     const response = await apiClient.get<ApiResponse<{ plans: MembershipPlan[] }>>('/plans');
     return handleApiResponse(response);
@@ -338,7 +332,6 @@ class FitZoneAPI {
     handleApiResponse(response);
   }
 
-  // ===== Gym Locations =====
   async getGymLocations(): Promise<{ locations: GymLocation[] }> {
     const response = await apiClient.get<ApiResponse<{ locations: GymLocation[] }>>('/locations');
     return handleApiResponse(response);
@@ -354,7 +347,6 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
-  // ===== Check-ins =====
   async checkIn(memberId?: string): Promise<{ checkin: CheckIn }> {
     const response = await apiClient.post<ApiResponse<{ checkin: CheckIn }>>('/checkins', { memberId });
     return handleApiResponse(response);
@@ -379,7 +371,6 @@ class FitZoneAPI {
     return response.data;
   }
 
-  // ===== Promotions =====
   async getPromotions(): Promise<{ promotions: Promotion[] }> {
     const response = await apiClient.get<ApiResponse<{ promotions: Promotion[] }>>('/promotions');
     return handleApiResponse(response);
@@ -400,7 +391,6 @@ class FitZoneAPI {
     handleApiResponse(response);
   }
 
-  // ===== Analytics =====
   async getAnalytics(params: { dateFrom?: string; dateTo?: string; gymLocationId?: string } = {}): Promise<AnalyticsData> {
     const queryString = buildQueryString(params);
     const url = queryString ? `/analytics?${queryString}` : '/analytics';
@@ -422,7 +412,6 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
-  // ===== Admin =====
   async getAdminDashboard(): Promise<any> {
     const response = await apiClient.get<ApiResponse<any>>('/admin/dashboard');
     return handleApiResponse(response);
@@ -438,7 +427,6 @@ class FitZoneAPI {
     handleApiResponse(response);
   }
 
-  // ===== File Upload =====
   async uploadFile(file: File, type: 'profile' | 'document' = 'profile'): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('file', file);
@@ -448,13 +436,12 @@ class FitZoneAPI {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000, // 30 seconds for file uploads
+      timeout: 30000,
     });
 
     return handleApiResponse(response);
   }
 
-  // ===== Health Check =====
   async healthCheck(): Promise<any> {
     try {
       const response = await axios.get(`${API_BASE_URL.replace('/api/v1', '')}/api/health`, {
@@ -493,5 +480,4 @@ export const setAuthToken = (token: string): void => {
   });
 };
 
-// ===== Export Types =====
 export type { ApiResponse, PaginatedResponse } from '@/types';
