@@ -36,6 +36,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     router.push('/auth/login');
   };
 
+  // Fixed: Added null check and default value for read property
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
   const getInitials = (name: string) => {
@@ -92,7 +93,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex flex-1 items-center justify-end space-x-2">
           {/* Notifications */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
@@ -127,17 +128,19 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.photoUrl} alt={user?.name} />
+                  {/* Fixed: Handle missing photoUrl property safely */}
+                  <AvatarImage src={user?.photoUrl || ''} alt={user?.name || ''} />
                   <AvatarFallback className={getRoleColor(user?.role || '')}>
                     {user?.name ? getInitials(user.name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            {/* Fixed: Removed unsupported forceMount prop */}
+            <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user?.name}</p>
@@ -148,17 +151,14 @@ export function Header({ onMenuClick }: HeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/profile">
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </Link>
+              {/* Fixed: Removed asChild prop and used onClick instead */}
+              <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               

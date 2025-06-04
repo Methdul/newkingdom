@@ -20,6 +20,11 @@ import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
+// Helper function to get status-specific data from analytics
+const getStatusCount = (statusDistribution: Array<{status: string; count: number; percentage: number}> | undefined, status: string): number => {
+  return statusDistribution?.find(item => item.status === status)?.count || 0;
+};
+
 export function MemberDashboard() {
   const { user } = useAuth();
   const { data: checkinsData, isLoading: checkinsLoading } = useMyCheckIns({ limit: 5 });
@@ -41,10 +46,19 @@ export function MemberDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'success';
+      case 'active': return 'default';
       case 'expired': return 'destructive';
-      case 'expiring_soon': return 'warning';
-      default: return 'secondary';
+      case 'pending': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'expired': return 'destructive'; 
+      case 'pending': return 'secondary';
+      default: return 'outline';
     }
   };
 
@@ -72,12 +86,12 @@ export function MemberDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Membership Status</span>
-              <Badge variant={getStatusColor(memberData?.membershipStatus) as any}>
-                {memberData?.membershipStatus}
+              <Badge variant={getStatusVariant(memberData?.membershipStatus || 'inactive')}>
+                {memberData?.membershipStatus || 'inactive'}
               </Badge>
             </CardTitle>
             <CardDescription>
-              {memberData?.membershipPlan?.name} plan
+              {memberData?.membershipPlan?.name || 'No active plan'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -89,10 +103,10 @@ export function MemberDashboard() {
               <Progress value={membershipProgress} className="h-2" />
             </div>
             <div className="flex justify-between text-sm">
-              <span>Started: {formatDate(memberData?.membershipStartDate)}</span>
-              <span>Expires: {formatDate(memberData?.membershipEndDate)}</span>
+              <span>Started: {memberData?.membershipStartDate ? formatDate(memberData.membershipStartDate) : 'N/A'}</span>
+              <span>Expires: {memberData?.membershipEndDate ? formatDate(memberData.membershipEndDate) : 'N/A'}</span>
             </div>
-            {daysRemaining <= 7 && (
+            {daysRemaining <= 7 && daysRemaining > 0 && (
               <Button asChild className="w-full">
                 <Link href="/membership/renew">
                   Renew Membership
@@ -205,7 +219,7 @@ export function MemberDashboard() {
                         {formatDate(payment.paymentDate)} • {payment.paymentMethod}
                       </p>
                     </div>
-                    <Badge variant="success">Paid</Badge>
+                    <Badge variant="default">Paid</Badge>
                   </div>
                 )) || (
                   <p className="text-sm text-muted-foreground text-center py-4">
@@ -257,6 +271,36 @@ export function MemberDashboard() {
                 <span>Profile Settings</span>
               </Link>
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fitness Goals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Target className="mr-2 h-4 w-4" />
+            Fitness Goals
+          </CardTitle>
+          <CardDescription>
+            Track your progress towards your fitness objectives
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Monthly Workout Goal</p>
+                <p className="text-xs text-muted-foreground">20 gym visits this month</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold">{checkinsData?.data?.items?.length || 0}/20</p>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round(((checkinsData?.data?.items?.length || 0) / 20) * 100)}% complete
+                </p>
+              </div>
+            </div>
+            <Progress value={((checkinsData?.data?.items?.length || 0) / 20) * 100} className="h-2" />
           </div>
         </CardContent>
       </Card>

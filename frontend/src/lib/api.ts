@@ -3,7 +3,12 @@
  * Handles all API communication with the backend
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { 
+  AxiosInstance, 
+  AxiosRequestConfig, 
+  AxiosResponse, 
+  InternalAxiosRequestConfig 
+} from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
 import type {
@@ -33,6 +38,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/a
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 
+// ===== Extended Axios Config with Metadata =====
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime: number;
+      url?: string;
+      method?: string;
+    };
+  }
+}
+
 // ===== Axios Instance =====
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -44,16 +60,23 @@ const apiClient: AxiosInstance = axios.create({
 
 // ===== Request Interceptor =====
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     // Add auth token to requests
     const token = Cookies.get(TOKEN_KEY);
     if (token) {
+      if (!config.headers) {
+        config.headers = {} as any;
+      }
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Add request timestamp for debugging
     if (process.env.NODE_ENV === 'development') {
-      config.metadata = { startTime: Date.now() };
+      config.metadata = { 
+        startTime: Date.now(),
+        url: config.url,
+        method: config.method?.toUpperCase()
+      };
     }
 
     return config;
@@ -69,7 +92,7 @@ apiClient.interceptors.response.use(
     // Log response time in development
     if (process.env.NODE_ENV === 'development' && response.config.metadata) {
       const duration = Date.now() - response.config.metadata.startTime;
-      console.log(`API ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`);
+      console.log(`API ${response.config.metadata.method} ${response.config.metadata.url} - ${duration}ms`);
     }
 
     return response;
@@ -92,6 +115,9 @@ apiClient.interceptors.response.use(
           Cookies.set(TOKEN_KEY, accessToken);
 
           // Retry original request
+          if (!originalRequest.headers) {
+            originalRequest.headers = {} as any;
+          }
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
         }
@@ -108,13 +134,24 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Handle other errors
+    // Handle other errors with user-friendly messages
+    let errorMessage = 'An unexpected error occurred';
+    
     if (error.response?.data?.message) {
-      toast.error(error.response.data.message);
+      errorMessage = error.response.data.message;
     } else if (error.message) {
-      toast.error(error.message);
-    } else {
-      toast.error('An unexpected error occurred');
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        errorMessage = 'Request timeout. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    // Only show toast for non-401 errors (401 is handled above)
+    if (error.response?.status !== 401) {
+      toast.error(errorMessage);
     }
 
     return Promise.reject(error);
@@ -149,18 +186,22 @@ class FitZoneAPI {
     const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
     const data = handleApiResponse(response);
     
-    // Store tokens
-    Cookies.set(TOKEN_KEY, data.session.accessToken, {
-      expires: new Date(data.session.expiresAt * 1000),
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    // Store tokens with proper expiration
+    if (data.session.accessToken) {
+      Cookies.set(TOKEN_KEY, data.session.accessToken, {
+        expires: new Date(data.session.expiresAt * 1000),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+    }
     
-    Cookies.set(REFRESH_TOKEN_KEY, data.session.refreshToken, {
-      expires: 7, // 7 days
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    if (data.session.refreshToken) {
+      Cookies.set(REFRESH_TOKEN_KEY, data.session.refreshToken, {
+        expires: 7, // 7 days
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+    }
     
     return data;
   }
@@ -174,7 +215,8 @@ class FitZoneAPI {
     try {
       await apiClient.post('/auth/logout');
     } catch (error) {
-      // Ignore logout errors
+      // Ignore logout errors - always clear local tokens
+      console.warn('Logout API call failed:', error);
     } finally {
       Cookies.remove(TOKEN_KEY);
       Cookies.remove(REFRESH_TOKEN_KEY);
@@ -209,7 +251,8 @@ class FitZoneAPI {
   // ===== Members =====
   async getMembers(params: MemberQueryParams = {}): Promise<PaginatedResponse<Member[]>> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<PaginatedResponse<Member[]>>(`/members?${queryString}`);
+    const url = queryString ? `/members?${queryString}` : '/members';
+    const response = await apiClient.get<PaginatedResponse<Member[]>>(url);
     return response.data;
   }
 
@@ -246,7 +289,8 @@ class FitZoneAPI {
   // ===== Staff =====
   async getStaff(params: QueryParams = {}): Promise<PaginatedResponse<TeamMember[]>> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<PaginatedResponse<TeamMember[]>>(`/staff?${queryString}`);
+    const url = queryString ? `/staff?${queryString}` : '/staff';
+    const response = await apiClient.get<PaginatedResponse<TeamMember[]>>(url);
     return response.data;
   }
 
@@ -258,7 +302,8 @@ class FitZoneAPI {
   // ===== Payments =====
   async getPayments(params: PaymentQueryParams = {}): Promise<PaginatedResponse<Payment[]>> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<PaginatedResponse<Payment[]>>(`/payments?${queryString}`);
+    const url = queryString ? `/payments?${queryString}` : '/payments';
+    const response = await apiClient.get<PaginatedResponse<Payment[]>>(url);
     return response.data;
   }
 
@@ -322,13 +367,15 @@ class FitZoneAPI {
 
   async getMyCheckIns(params: QueryParams = {}): Promise<PaginatedResponse<CheckIn[]>> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<PaginatedResponse<CheckIn[]>>(`/checkins/my-history?${queryString}`);
+    const url = queryString ? `/checkins/my-history?${queryString}` : '/checkins/my-history';
+    const response = await apiClient.get<PaginatedResponse<CheckIn[]>>(url);
     return response.data;
   }
 
   async getCheckIns(params: QueryParams = {}): Promise<PaginatedResponse<CheckIn[]>> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<PaginatedResponse<CheckIn[]>>(`/checkins?${queryString}`);
+    const url = queryString ? `/checkins?${queryString}` : '/checkins';
+    const response = await apiClient.get<PaginatedResponse<CheckIn[]>>(url);
     return response.data;
   }
 
@@ -356,19 +403,22 @@ class FitZoneAPI {
   // ===== Analytics =====
   async getAnalytics(params: { dateFrom?: string; dateTo?: string; gymLocationId?: string } = {}): Promise<AnalyticsData> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<ApiResponse<AnalyticsData>>(`/analytics?${queryString}`);
+    const url = queryString ? `/analytics?${queryString}` : '/analytics';
+    const response = await apiClient.get<ApiResponse<AnalyticsData>>(url);
     return handleApiResponse(response);
   }
 
   async getRevenueAnalytics(params: any = {}): Promise<any> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<ApiResponse<any>>(`/analytics/revenue?${queryString}`);
+    const url = queryString ? `/analytics/revenue?${queryString}` : '/analytics/revenue';
+    const response = await apiClient.get<ApiResponse<any>>(url);
     return handleApiResponse(response);
   }
 
   async getMemberAnalytics(params: any = {}): Promise<any> {
     const queryString = buildQueryString(params);
-    const response = await apiClient.get<ApiResponse<any>>(`/analytics/members?${queryString}`);
+    const url = queryString ? `/analytics/members?${queryString}` : '/analytics/members';
+    const response = await apiClient.get<ApiResponse<any>>(url);
     return handleApiResponse(response);
   }
 
@@ -398,6 +448,7 @@ class FitZoneAPI {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 30000, // 30 seconds for file uploads
     });
 
     return handleApiResponse(response);
@@ -405,8 +456,15 @@ class FitZoneAPI {
 
   // ===== Health Check =====
   async healthCheck(): Promise<any> {
-    const response = await axios.get(`${API_BASE_URL.replace('/api/v1', '')}/api/health`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL.replace('/api/v1', '')}/api/health`, {
+        timeout: 5000
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      throw error;
+    }
   }
 }
 
@@ -426,6 +484,13 @@ export const clearAuthTokens = (): void => {
 
 export const getAuthToken = (): string | undefined => {
   return Cookies.get(TOKEN_KEY);
+};
+
+export const setAuthToken = (token: string): void => {
+  Cookies.set(TOKEN_KEY, token, {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
 };
 
 // ===== Export Types =====

@@ -7,41 +7,7 @@ export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'online' | 'stri
 export type MembershipCategory = 'basic' | 'premium' | 'vip' | 'corporate';
 export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
-// ===== User Types =====
-
-export interface User {
-  id: string;
-  userId: string;
-  role: UserRole;
-  type: 'team_member' | 'member';
-  name: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  isActive: boolean;
-  gymLocationId?: string;
-  gymLocation?: GymLocation;
-}
-
-export interface TeamMember extends User {
-  type: 'team_member';
-  employeeId: string;
-  permissions: Record<string, boolean>;
-}
-
-export interface Member extends User {
-  type: 'member';
-  memberNumber: string;
-  planId?: string;
-  membershipStatus: MembershipStatus;
-  membershipStartDate?: string;
-  membershipEndDate?: string;
-  autoRenewal: boolean;
-  membershipPlan?: MembershipPlan;
-}
-
-// ===== Business Entity Types =====
+// ===== Business Entity Types (Defined first to avoid reference errors) =====
 
 export interface GymLocation {
   id: string;
@@ -82,6 +48,42 @@ export interface MembershipPlan {
   createdAt: string;
   updatedAt: string;
 }
+
+// ===== User Types =====
+
+export interface User {
+  id: string;
+  userId: string;
+  role: UserRole;
+  type: 'team_member' | 'member';
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+  gymLocationId?: string;
+  gymLocation?: GymLocation;
+}
+
+export interface TeamMember extends User {
+  type: 'team_member';
+  employeeId: string;
+  permissions: Record<string, boolean>;
+}
+
+export interface Member extends User {
+  type: 'member';
+  memberNumber: string;
+  planId?: string;
+  membershipStatus: MembershipStatus;
+  membershipStartDate?: string;
+  membershipEndDate?: string;
+  autoRenewal: boolean;
+  membershipPlan?: MembershipPlan;
+}
+
+// ===== Additional Business Entity Types =====
 
 export interface Payment {
   id: string;
@@ -157,6 +159,50 @@ export interface MemberGoal {
   updatedAt: string;
 }
 
+// ===== Analytics Types (Now MembershipPlan is defined) =====
+
+export interface AnalyticsData {
+  revenue: {
+    total: number;
+    thisMonth: number;
+    lastMonth: number;
+    today?: number; // Optional: today's revenue
+    growth: number;
+    chart: Array<{
+      date: string;
+      amount: number;
+    }>;
+  };
+  members: {
+    total: number;
+    active: number;
+    inactive: number;
+    newThisMonth: number;
+    growth: number;
+    expiringSoon?: number; // Optional: members expiring soon
+    expired?: number; // Optional: expired members
+    statusDistribution: Array<{
+      status: string;
+      count: number;
+      percentage: number;
+    }>;
+  };
+  checkins: {
+    today: number;
+    thisWeek: number;
+    avgDaily: number;
+    peakHours: Array<{
+      hour: number;
+      count: number;
+    }>;
+  };
+  topPlans: Array<{
+    plan: MembershipPlan;
+    memberCount: number;
+    revenue: number;
+  }>;
+}
+
 // ===== API Response Types =====
 
 export interface ApiResponse<T = any> {
@@ -170,7 +216,10 @@ export interface ApiResponse<T = any> {
   }>;
 }
 
-export interface PaginatedResponse<T = any> extends ApiResponse<T> {
+// PaginatedResponse is separate from ApiResponse to avoid type conflicts
+export interface PaginatedResponse<T = any> {
+  status: 'success' | 'error';
+  message?: string;
   data: {
     items: T[];
     pagination: {
@@ -184,6 +233,11 @@ export interface PaginatedResponse<T = any> extends ApiResponse<T> {
       prevPage?: number;
     };
   };
+  errors?: Array<{
+    field: string;
+    message: string;
+    value?: any;
+  }>;
 }
 
 export interface AuthResponse {
@@ -257,47 +311,6 @@ export interface PaymentForm {
   notes?: string;
 }
 
-// ===== Analytics Types =====
-
-export interface AnalyticsData {
-  revenue: {
-    total: number;
-    thisMonth: number;
-    lastMonth: number;
-    growth: number;
-    chart: Array<{
-      date: string;
-      amount: number;
-    }>;
-  };
-  members: {
-    total: number;
-    active: number;
-    inactive: number;
-    newThisMonth: number;
-    growth: number;
-    statusDistribution: Array<{
-      status: string;
-      count: number;
-      percentage: number;
-    }>;
-  };
-  checkins: {
-    today: number;
-    thisWeek: number;
-    avgDaily: number;
-    peakHours: Array<{
-      hour: number;
-      count: number;
-    }>;
-  };
-  topPlans: Array<{
-    plan: MembershipPlan;
-    memberCount: number;
-    revenue: number;
-  }>;
-}
-
 // ===== UI Component Types =====
 
 export interface TableColumn<T = any> {
@@ -361,11 +374,30 @@ export interface AppState {
   removeNotification: (id: string) => void;
 }
 
+// Find these interfaces in your types file and update them:
+
+export interface User {
+  id: string;
+  userId: string;
+  role: UserRole;
+  type: 'team_member' | 'member';
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  photoUrl?: string; // ✅ ADD THIS LINE
+  isActive: boolean;
+  gymLocationId?: string;
+  gymLocation?: GymLocation;
+}
+
 export interface Notification {
   id: string;
   type: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message?: string;
+  read?: boolean; // ✅ ADD THIS LINE
   duration?: number;
   action?: {
     label: string;
