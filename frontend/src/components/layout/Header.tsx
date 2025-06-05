@@ -91,10 +91,10 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2">
-          {/* Notifications */}
+          {/* Notifications - FIXED: Use asChild to prevent button nesting */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
-              <div className="relative cursor-pointer p-2 rounded-md hover:bg-gray-100 transition-colors">
+              <button className="relative cursor-pointer p-2 rounded-md hover:bg-gray-100 transition-colors">
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
                   <Badge
@@ -104,24 +104,22 @@ export function Header({ onMenuClick }: HeaderProps) {
                     {unreadNotifications}
                   </Badge>
                 )}
-              </div>
+              </button>
             </DropdownMenuTrigger>
           </DropdownMenu>
 
-          {/* User menu */}
+          {/* User menu - FIXED: Use asChild to prevent button nesting */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <DropdownMenuTrigger asChild>
+              <button className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  {/* Fixed: Handle missing photoUrl property safely */}
                   <AvatarImage src={user?.photoUrl || ''} alt={user?.name || ''} />
                   <AvatarFallback className={getRoleColor(user?.role || '')}>
                     {user?.name ? getInitials(user.name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            {/* Fixed: Removed unsupported forceMount prop */}
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
@@ -133,7 +131,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {/* Fixed: Removed asChild prop and used onClick instead */}
               <DropdownMenuItem onClick={() => router.push('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 Profile
