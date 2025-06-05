@@ -121,17 +121,25 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           console.log('Token refreshed successfully, retrying request');
           return apiClient(originalRequest);
+        } else {
+          // No refresh token available, force user to login again
+          Cookies.remove(TOKEN_KEY);
+          Cookies.remove(REFRESH_TOKEN_KEY);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
+          return Promise.reject(error);
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
         Cookies.remove(TOKEN_KEY);
         Cookies.remove(REFRESH_TOKEN_KEY);
-        
+
         if (typeof window !== 'undefined') {
           console.log('Redirecting to login due to token refresh failure');
           window.location.href = '/auth/login';
         }
-        
+
         return Promise.reject(refreshError);
       }
     }
@@ -317,6 +325,11 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
+  async getMembershipPlan(id: string): Promise<{ plan: MembershipPlan }> {
+    const response = await apiClient.get<ApiResponse<{ plan: MembershipPlan }>>(`/plans/${id}`);
+    return handleApiResponse(response);
+  }
+
   async createMembershipPlan(planData: any): Promise<{ plan: MembershipPlan }> {
     const response = await apiClient.post<ApiResponse<{ plan: MembershipPlan }>>('/plans', planData);
     return handleApiResponse(response);
@@ -373,6 +386,11 @@ class FitZoneAPI {
 
   async getPromotions(): Promise<{ promotions: Promotion[] }> {
     const response = await apiClient.get<ApiResponse<{ promotions: Promotion[] }>>('/promotions');
+    return handleApiResponse(response);
+  }
+
+  async getPromotion(id: string): Promise<{ promotion: Promotion }> {
+    const response = await apiClient.get<ApiResponse<{ promotion: Promotion }>>(`/promotions/${id}`);
     return handleApiResponse(response);
   }
 
