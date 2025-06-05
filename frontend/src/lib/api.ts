@@ -325,6 +325,11 @@ class FitZoneAPI {
     return handleApiResponse(response);
   }
 
+  async getMembershipPlan(id: string): Promise<{ plan: MembershipPlan }> {
+    const response = await apiClient.get<ApiResponse<{ plan: MembershipPlan }>>(`/plans/${id}`);
+    return handleApiResponse(response);
+  }
+
   async createMembershipPlan(planData: any): Promise<{ plan: MembershipPlan }> {
     const response = await apiClient.post<ApiResponse<{ plan: MembershipPlan }>>('/plans', planData);
     return handleApiResponse(response);
@@ -381,6 +386,11 @@ class FitZoneAPI {
 
   async getPromotions(): Promise<{ promotions: Promotion[] }> {
     const response = await apiClient.get<ApiResponse<{ promotions: Promotion[] }>>('/promotions');
+    return handleApiResponse(response);
+  }
+
+  async getPromotion(id: string): Promise<{ promotion: Promotion }> {
+    const response = await apiClient.get<ApiResponse<{ promotion: Promotion }>>(`/promotions/${id}`);
     return handleApiResponse(response);
   }
 

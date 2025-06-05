@@ -93,6 +93,29 @@ export function useMembershipPlans() {
   });
 }
 
+export function useMembershipPlan(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ['membership-plan', id],
+    queryFn: () => api.getMembershipPlan(id),
+    enabled: enabled && !!id,
+  });
+}
+
+export function usePromotions() {
+  return useQuery({
+    queryKey: ['promotions'],
+    queryFn: api.getPromotions,
+  });
+}
+
+export function usePromotion(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ['promotion', id],
+    queryFn: () => api.getPromotion(id),
+    enabled: enabled && !!id,
+  });
+}
+
 // ===== Gym Locations =====
 export function useGymLocations() {
   return useQuery({
