@@ -57,16 +57,24 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
   ({ className, children, asChild = false, ...props }, ref) => {
     const context = React.useContext(DropdownContext);
     
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      context?.toggle();
+    };
+    
     if (asChild && React.isValidElement(children)) {
-      // Fix TypeScript error by properly typing the cloned element
+      // For asChild, we need to ensure we don't nest buttons
+      const childProps = children.props || {};
       return React.cloneElement(children as React.ReactElement<any>, {
-        ...children.props,
+        ...childProps,
         onClick: (e: React.MouseEvent) => {
-          context?.toggle();
-          if (children.props.onClick) {
-            children.props.onClick(e);
+          handleClick(e);
+          if (childProps.onClick) {
+            childProps.onClick(e);
           }
         },
+        'aria-expanded': context?.open,
+        'aria-haspopup': 'true',
         ref,
       });
     }
@@ -79,7 +87,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
           'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
           className
         )}
-        onClick={context?.toggle}
+        onClick={handleClick}
         aria-expanded={context?.open}
         aria-haspopup="true"
         {...props}
@@ -89,7 +97,6 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
     );
   }
 );
-DropdownMenuTrigger.displayName = 'DropdownMenuTrigger';
 
 // Dropdown Content
 interface DropdownMenuContentProps {

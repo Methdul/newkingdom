@@ -93,8 +93,8 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex flex-1 items-center justify-end space-x-2">
           {/* Notifications */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="icon" className="relative">
+            <DropdownMenuTrigger asChild>
+              <div className="relative cursor-pointer p-2 rounded-md hover:bg-gray-100 transition-colors">
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
                   <Badge
@@ -104,26 +104,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                     {unreadNotifications}
                   </Badge>
                 )}
-              </Button>
+              </div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No notifications
-                </div>
-              ) : (
-                notifications.slice(0, 5).map((notification) => (
-                  <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-4">
-                    <div className="font-medium">{notification.title}</div>
-                    {notification.message && (
-                      <div className="text-sm text-muted-foreground">{notification.message}</div>
-                    )}
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
           </DropdownMenu>
 
           {/* User menu */}
