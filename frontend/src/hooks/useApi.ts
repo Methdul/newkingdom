@@ -47,7 +47,7 @@ export function useCreateMember() {
 
 export function useUpdateMember() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.updateMember(id, data),
     onSuccess: (data, variables) => {
@@ -57,6 +57,52 @@ export function useUpdateMember() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update member');
+    },
+  });
+}
+
+export function useSuspendMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      api.suspendMember(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success('Member suspended successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to suspend member');
+    },
+  });
+}
+
+export function useActivateMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.activateMember(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success('Member activated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to activate member');
+    },
+  });
+}
+
+export function useDeleteMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteMember(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast.success('Member deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete member');
     },
   });
 }
