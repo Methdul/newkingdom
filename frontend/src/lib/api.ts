@@ -121,17 +121,25 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           console.log('Token refreshed successfully, retrying request');
           return apiClient(originalRequest);
+        } else {
+          // No refresh token available, force user to login again
+          Cookies.remove(TOKEN_KEY);
+          Cookies.remove(REFRESH_TOKEN_KEY);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
+          return Promise.reject(error);
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
         Cookies.remove(TOKEN_KEY);
         Cookies.remove(REFRESH_TOKEN_KEY);
-        
+
         if (typeof window !== 'undefined') {
           console.log('Redirecting to login due to token refresh failure');
           window.location.href = '/auth/login';
         }
-        
+
         return Promise.reject(refreshError);
       }
     }
